@@ -1,0 +1,228 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+
+import copy 
+import random
+
+#given a state of the board, return a list of all valid successor states
+def succ(state, static_x, static_y):
+    #the size of the square board
+    n = len(state)
+    
+    valid_succ = []
+
+    
+    #if there is not a queen on the static point return empty set
+    if(state[static_x] != static_y):
+        return valid_succ
+    
+    #copy the data from state to new array
+    possible_state = copy.deepcopy(state)
+    for column in range(n):
+        #don't move static state
+        if(column == static_x):
+            continue
+        #copy the data from state to new array
+        possible_state = copy.deepcopy(state)
+        #try to subtract one from the new array    
+        if(possible_state[column] - 1 >= 0):
+            possible_state[column] = state[column] - 1
+            valid_succ.append(possible_state)
+        #copy the data from state to new array
+        possible_state = copy.deepcopy(state)
+        #try adding 1 to the column
+        if(possible_state[column] + 1 < n):
+            possible_state[column] = state[column] + 1
+            valid_succ.append(possible_state)
+    #sort to have same order as example
+    valid_succ = sorted(valid_succ)  
+    return valid_succ
+
+# given a state of the board, 
+# return an integer score such that the goal state scores 0
+def f(state):
+    
+    attacked_list = []
+    n = len(state)
+
+    for column in range(n):
+        for i in range(n):
+            #skip the check if you are in your own column
+            if (i == column):
+                continue               
+                
+            #if the queens are in the saame row add to attacked list
+            if (state[column] == state[i]):
+                attacked_list.append([column,i])
+ 
+            #if the queens are on the same diagonal add to attacked list
+            if(abs(column - i) == abs(state[column] - state[i])):
+                attacked_list.append([column,i])
+    
+    #list of all the peice numbers
+    peice = []
+    #list of unique peice numbers
+    unique_peice = []
+    
+    #go through list of pairs and append the peice number to a list
+    for pair in attacked_list:
+        #add to list
+        peice.append(pair[0])
+        peice.append(pair[1])
+        
+    #if the peice number is unique append it
+    for element in peice:
+        if element not in unique_peice:
+            unique_peice.append(element)
+         
+    #now just return the number of unique conflicts we have
+    return len(unique_peice)
+
+def choose_next(curr, static_x, static_y):
+    
+    #get all successors
+    possible_succ = succ(curr, static_x, static_y)
+    
+    #handle case of no queen on static place
+    if(len(possible_succ) == 0):
+        return None
+    
+    #add current state to list of states to check
+    possible_succ.append(curr)
+    #will hold the state and f valaue for sorting
+    state_list = []
+    
+    #loop throughh all the possible states
+    for state in possible_succ:
+        #adds them to list with f values
+        state_list.append([state,f(state)])
+        
+        
+        
+    #sorts the list by f value then assending order
+    state_list.sort(key=lambda x: (x[1],x[0]) )
+
+    return state_list[0][0]
+
+#run the hill-climbing algorithm from a given initial state, 
+     #return the convergence state
+def n_queens(initial_state, static_x, static_y):
+    #print initial state
+    print(str(initial_state) +  "- f="+str(f(initial_state))) 
+    #calculate next state
+    current_state = choose_next(initial_state, static_x, static_y)
+    #flag for if some f has been see twice
+    keep_searching = True
+    while(keep_searching):
+        #find next state
+        next_state = choose_next(current_state,static_x, static_y)
+        #print next state
+        if(f(next_state) != 0):
+            print(str(current_state) +  "- f="+str(f(current_state))) 
+        #change flage to false to stop while loop
+        if(f(current_state) == f(choose_next(current_state, static_x, static_y))):
+            keep_searching = False
+        #update state for next loop
+        current_state = next_state
+    print(str(current_state) +  "- f="+str(f(current_state)))     
+    return current_state
+    
+#n queens without prints for n_queens_restart
+def n_queens_silent(initial_state, static_x, static_y):
+    #print initial state
+    #calculate next state
+    current_state = choose_next(initial_state, static_x, static_y)
+    #flag for if some f has been see twice
+    keep_searching = True
+    while(keep_searching):
+        #find next state
+        next_state = choose_next(current_state,static_x, static_y)
+        #change flage to false to stop while loop
+        if(f(current_state) == f(choose_next(current_state, static_x, static_y))):
+            keep_searching = False
+        #update state for next loop
+        current_state = next_state
+    return current_state
+
+def n_queens_restart(n, k, static_x, static_y):
+    random.seed(1)
+    solutions = []
+    
+    for i in range(k):
+        
+        #initialize an array
+        initial_state = [0]*n
+        #for each element in array put in random number 
+        for j in range(n):
+            initial_state[j] = random.randint(0, n)
+            
+        #put in the static point
+        initial_state[static_x] = static_y
+        
+        #get solution
+        solution = n_queens_silent(initial_state, static_x, static_y)
+        #find f score    
+        f_score = f(solution)
+        
+        if(f_score == 0):
+            print(str(solution) +  "- f="+str(f(solution)))
+            return
+        else:
+            solutions.append([solution,f_score])
+        
+        
+    solutions.sort(key=lambda x: (x[1]) )
+    
+    if (len(solutions) >= 10):
+        for i in range(10):
+            print(str(solutions[i][0]) +  "- f="+str(solutions[i][1]))
+    else:
+        for i in range(len(solutions)):
+            print(str(solutions[i][0]) +  "- f="+str(solutions[i][1]))
+    
+    
+    return
+    
+    
+
+
+# In[281]:
+
+
+#succ([0, 1, 2], 0, 0)
+#succ([1, 1, 2], 0, 0)
+#succ([1, 1, 2], 1, 1)
+#succ([0, 1, 2, 3, 5, 6, 6, 7], 1, 1)
+
+#f([1, 2, 2])
+#f([2, 2, 2])
+#f([0, 0, 2])
+#f([0, 2, 0])
+#f([0, 2, 1])
+#f([1,0,2,4,3]) #f=4
+#f([0, 1, 2, 3, 5, 6, 6, 7])
+#f([0, 1, 2, 3, 5, 7, 6, 7])
+
+#choose_next([1, 1, 2], 1, 1)
+#choose_next([0, 2, 0], 0, 0)
+#choose_next([0, 1, 0], 0, 0)
+#print(choose_next([0, 1, 0], 0, 1))
+#choose_next([0, 1, 2, 3, 5, 6, 6, 7], 1, 1)
+#choose_next([0, 1, 2, 3, 5, 7, 6, 7],1,1)
+
+#n_queens([0, 1, 2, 3, 5, 6, 6, 7], 1, 1)
+#n_queens([0, 7, 3, 4, 7, 1, 2, 2], 0, 0)
+#n_queens_restart(7, 10, 0, 0)
+
+
+
+
+
+
+
+
+
+
+
+
